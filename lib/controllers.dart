@@ -11,6 +11,8 @@ RxString ipInfo = ''.obs;
 RxString hostInfo = ''.obs;
 RxString userName = ''.obs;
 final shareName = TextEditingController();
+final remoteHostname = TextEditingController();
+final RxnBool isRemote = RxnBool(null);
 
 class FileService {
   Future<String> run() async {
@@ -62,7 +64,7 @@ class FileService {
   }
 
   Future<String> mapFolder(String path) async {
-    String command = 'NET USE T: /DELETE /YES \n NET USE T: $path /user:${userName.value}';
+    String command = 'NET USE T: $path /user:${userName.value}';
     final r = await Process.run(command, [], runInShell: true);
     return '${r.exitCode} - ${r.stdout} ${r.stderr}';
   }

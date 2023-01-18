@@ -6,6 +6,7 @@ class HomePage extends StatelessWidget {
   HomePage({super.key});
 
   final formKey = GlobalKey<FormState>();
+  final remoteForm = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +30,7 @@ class HomePage extends StatelessWidget {
                       SelectionArea(
                         child: Row(
                           children: [
-                            Text('Hostname: ${hostInfo.value}'),
-                            SizedBox(width: Get.height * 0.02,),
-                            Text('IP: ${ipInfo.value}')
+                            Flexible(child: Text('Nome da sua máquina: ${hostInfo.value}\nIP: ${ipInfo.value}')),
                           ],
                         ),
                       ),
@@ -62,13 +61,67 @@ class HomePage extends StatelessWidget {
                     SizedBox(height: Get.height * 0.02,),
                     ElevatedButton(
                       onPressed: () async {
-                        final path = await ps.selectFold();
-                        if (path != null) {
-                          final s = await ps.mapFolder(path);
-                          loading();
-                          Get.back();
-                          Get.dialog(AlertDialog(content: Text(s.toString()),));
-                        }
+                        Get.dialog(AlertDialog(
+                          scrollable: true,
+                          title: const Text('Tipo de mapeamento'),
+                          content: Obx(
+                            () => Form(
+                              key: remoteForm,
+                              child: Column(
+                                children: [
+                                  Row(  
+                                    children: [
+                                      Expanded(
+                                        child: RadioListTile(
+                                          title: const Text('Remoto'),
+                                          groupValue: isRemote.value,
+                                          value: true,
+                                          onChanged: (bool? value) => isRemote.value = value,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: RadioListTile(
+                                          title: const Text('Local'),
+                                          groupValue: isRemote.value,
+                                          value: false,
+                                          onChanged: (bool? value) => isRemote.value = value,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Visibility(
+                                    visible: isRemote.value ?? false,
+                                    child: TextFormField(
+                                      controller: remoteHostname,
+                                      validator: isRemote.value ?? false ? (String? value) => value?.isEmpty ?? true ? 'Obrigatório' : null : null,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Nome do computador remoto'
+                                      ),
+                                    )
+                                  )
+                                ],
+                              ),
+                            ),
+                          ),
+                          actions: [
+                            ElevatedButton(onPressed: () async {
+                              if (remoteForm.currentState!.validate()) {
+                                if (isRemote.value ?? false) {
+                                  loading();
+                                  final s = await ps.mapFolder(remoteHostname.text);
+                                } else {
+                                  final path = await ps.selectFold();
+                                  if (path != null) {
+                                    loading();
+                                    final s = await ps.mapFolder(path);
+                                    Get.back();
+                                    Get.dialog(AlertDialog(content: Text(s.toString()),));
+                                  }
+                                }
+                              }
+                            }, child: const Text('Confirmar')),
+                          ],
+                        ));
                       },
                       child: const Text('Mapear pasta'),
                     ),
