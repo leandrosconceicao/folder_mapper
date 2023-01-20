@@ -4,7 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:folder_mapper/model.dart';
 import 'package:get/get.dart';
-import 'package:network_info_plus/network_info_plus.dart';
 
 final ps = FileService();
 RxString ipInfo = ''.obs;
@@ -12,14 +11,15 @@ RxString hostInfo = ''.obs;
 RxString userName = ''.obs;
 final shareName = TextEditingController();
 final remoteHostname = TextEditingController();
+final folderName = TextEditingController();
 final RxnBool isRemote = RxnBool(null);
 
 class FileService {
-  Future<String> run() async {
+  Future<String> shareFolder() async {
     final path = await selectFold();
     if (path != null) {
       try {
-        String command = 'NET SHARE ${shareName.text}=$path /grant:${userName.value},FULL';
+        String command = 'NET SHARE ${path.split('\\').last}=$path /grant:${userName.value},FULL';
         final r = await Process.run(command, [], runInShell: true);
         if (r.exitCode == 2) {
           return 'Necessário executar a aplicação como administrador';
@@ -38,13 +38,16 @@ class FileService {
 
   Future<HostnameInfo> getHostInfo() async {
     Map<String, String?> dt = {};
-    const key = 'userdomain';
+    const key = 'computername';
     const userKey = 'username';
-    final net = NetworkInfo();
-    final ip = await net.getWifiIP();
-    if (ip != null) {
-      dt['ip'] = ip;
+    late final String ip;
+    try {
+      final req = await Process.run('ipconfig | findstr /C:IPv4', [], runInShell: true);
+      ip = req.stdout.trim().split(' . :')[1].trim();
+    } catch (e) {
+      ip = '';
     }
+    dt['ip'] = ip;
     if (Platform.environment.containsKey(key)) {
       dt['hostname'] = Platform.environment[key];
     }
@@ -63,9 +66,16 @@ class FileService {
     return f;
   }
 
-  Future<String> mapFolder(String path) async {
-    String command = 'NET USE T: $path /user:${userName.value}';
+  Future<String> mapFolder() async {
+    String command = 'NET USE T: ${_buildPath()} /user:${userName.value}';
     final r = await Process.run(command, [], runInShell: true);
+    if (r.exitCode == 0) {
+      return 'Processo concluido com sucesso';
+    }
     return '${r.exitCode} - ${r.stdout} ${r.stderr}';
+  }
+
+  String _buildPath() {
+    return "\\\\${remoteHostname.value.text}\\${folderName.value.text}";
   }
 }
