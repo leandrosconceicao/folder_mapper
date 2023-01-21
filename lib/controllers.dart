@@ -18,21 +18,48 @@ class FileService {
   Future<String> shareFolder() async {
     final path = await selectFold();
     if (path != null) {
+      if (path.contains(' ')) {
+        return 'Nome da pasta não pode conter espaços, renomei ou utilize outra pasta';
+      }
       try {
-        String command = 'NET SHARE ${path.split('\\').last}=$path /grant:${userName.value},FULL';
-        final r = await Process.run(command, [], runInShell: true);
+        final p = path.contains(" ") ? '"$path"' : path;
+        String command = 'NET SHARE ${_getShareName(path)}=$p /GRANT:${userName.value},FULL';
+        final r = await Process.run(command, [], runInShell: true,);
         if (r.exitCode == 2) {
           return 'Necessário executar a aplicação como administrador';
         } else if (r.exitCode == 0) {
           return 'Processo finalizado com sucesso!';
         } else {
-          return '${r.exitCode} - ${r.stdout} ${r.stderr}';
+          return setMessage(r);
         }
       } catch (e) {
         return 'Ocorreu um erro $e';
       }
     } else {
       return '';
+    }
+  }
+
+  String setMessage(ProcessResult r) => '${r.exitCode} - ${r.stdout} ${r.stderr}';
+
+  Future<String?> removeShareFolder() async {
+    final path = await selectFold();
+    if (path != null) {
+      try {
+        final command = 'NET SHARE ${_getShareName(path)} /delete';
+        final r = await Process.run(command, [], runInShell: true);
+        if (r.exitCode == 2) {
+          return 'Necessário executar a aplicação como administrador'; 
+        } else if (r.exitCode == 0) {
+          return 'Processo finalizado com sucesso!';
+        } else {
+          return setMessage(r);
+        }
+      } catch (e) { 
+        return 'Ocorreu um erro $e';
+      }
+    } else {
+      return null;
     }
   }
 
@@ -66,16 +93,20 @@ class FileService {
     return f;
   }
 
-  Future<String> mapFolder() async {
-    String command = 'NET USE T: ${_buildPath()} /user:${userName.value}';
-    final r = await Process.run(command, [], runInShell: true);
+  Future<String> mapFolder({String? path}) async {
+    String command = 'NET USE T: ${path != null ? '\\\\${hostInfo.value}\\${_getShareName(path)}' : _buildPath()} /user:${userName.value}';
+    final r = await Process.run(command, [], runInShell: true,);
     if (r.exitCode == 0) {
       return 'Processo concluido com sucesso';
     }
-    return '${r.exitCode} - ${r.stdout} ${r.stderr}';
+    return setMessage(r);
   }
 
   String _buildPath() {
     return "\\\\${remoteHostname.value.text}\\${folderName.value.text}";
+  }
+
+  String _getShareName(String path) {
+    return path.split("\\").last.replaceAll(" ", "_");
   }
 }
