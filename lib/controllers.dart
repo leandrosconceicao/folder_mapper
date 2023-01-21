@@ -94,7 +94,8 @@ class FileService {
   }
 
   Future<String> mapFolder({String? path}) async {
-    String command = 'NET USE T: ${path != null ? '\\\\${hostInfo.value}\\${_getShareName(path)}' : _buildPath()} /user:${userName.value}';
+    // await Process.run('NET USE T: /DELETE /YES', [], runInShell: true);
+    String command = 'IF NOT EXIST T: NET USE T: ${path != null ? '\\\\${hostInfo.value}\\${_getShareName(path)}' : _buildPath()} /user:${userName.value}';
     final r = await Process.run(command, [], runInShell: true,);
     if (r.exitCode == 0) {
       return 'Processo concluido com sucesso';
