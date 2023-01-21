@@ -40,7 +40,9 @@ class HomePage extends StatelessWidget {
                                         'Dados do host copiados com sucesso');
                               },
                               icon: const Icon(Icons.copy)),
-                          SizedBox(width: Get.height * 0.02,),
+                          SizedBox(
+                            width: Get.height * 0.02,
+                          ),
                           Column(
                             children: [
                               Text('Nome do computador: ${hostInfo.value}'),
@@ -53,7 +55,9 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: Get.height * 0.02,),
+              SizedBox(
+                height: Get.height * 0.02,
+              ),
               SizedBox(
                 width: Get.height * 0.6,
                 height: Get.height * 0.07,
@@ -75,6 +79,37 @@ class HomePage extends StatelessWidget {
                 width: Get.height * 0.6,
                 height: Get.height * 0.07,
                 child: ElevatedButton(
+                    style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(Colors.red)),
+                    onPressed: () async {
+                      final p = await ps.removeShareFolder();
+                      if (p != null) {
+                        Get.dialog(
+                          AlertDialog(
+                            content: Text(p),
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text('Remover compartilhamento')),
+              ),
+              SizedBox(
+                height: Get.height * 0.02,
+              ),
+              const Divider(
+                indent: 50.0,
+                endIndent: 50.0,
+              ),
+              SizedBox(
+                height: Get.height * 0.02,
+              ),
+              SizedBox(
+                width: Get.height * 0.6,
+                height: Get.height * 0.07,
+                child: ElevatedButton(
+                  style: ButtonStyle(
+                      backgroundColor:
+                          MaterialStateProperty.all(Colors.orange)),
                   onPressed: () async {
                     Get.dialog(AlertDialog(
                       scrollable: true,
@@ -151,15 +186,15 @@ class HomePage extends StatelessWidget {
                                   final req = await ps.mapFolder();
                                   Get.back();
                                   Get.back();
-                                  Get.rawSnackbar(message: req);
+                                  Get.defaultDialog(title: 'Atenção', middleText: req);
                                 } else {
                                   final path = await ps.selectFold() ?? '';
                                   if (path.isNotEmpty) {
                                     loading();
-                                    final s = await ps.mapFolder();
+                                    final s = await ps.mapFolder(path: path);
                                     Get.back();
                                     Get.back();
-                                    Get.rawSnackbar(message: s);
+                                    Get.defaultDialog(title: 'Atenção', middleText: s);
                                   }
                                 }
                               }
